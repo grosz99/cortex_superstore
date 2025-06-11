@@ -1,275 +1,184 @@
-version: 1
-model:
-  name: SuperstoreModel
-  description: Semantic model for Superstore retail data analysis
-  documentation: |
-    This semantic model represents a retail superstore business with three main entities:
-    1. Orders - Contains sales transactions with product, customer, and financial details
-    2. Customers - Contains customer relationship information and contact details
-    3. Products - Contains product specifications and attributes
-    
-    Common business questions include sales analysis by region, customer segment analysis,
-    product performance metrics, and profitability trends over time.
-  tables:
-    - name: Orders
-      description: Main sales and order data for the Superstore
-      schema: data
-      database: SuperstoreDB
-      columns:
-        - name: Order_ID
-          description: Unique identifier for each order
-          primaryKey: true
-        - name: Order_Date
-          description: Date when the order was placed
-          type: date
-        - name: Ship_Date
-          description: Date when the order was shipped
-          type: date
-        - name: Ship_Mode
-          description: Shipping mode for the order (Standard, Express, etc.)
-        - name: Customer_ID
-          description: Unique identifier for the customer
-        - name: Customer_Name
-          description: Name of the customer
-        - name: Segment
-          description: Customer segment (Consumer, Corporate, Home Office)
-        - name: Country
-          description: Country where the order was placed
-        - name: City
-          description: City where the order was placed
-        - name: State
-          description: State where the order was placed
-        - name: Postal_Code
-          description: Postal code of the delivery address
-        - name: Region
-          description: Geographic region (East, West, Central, South)
-        - name: Product_ID
-          description: Unique identifier for the product
-        - name: Category
-          description: Product category (Furniture, Office Supplies, Technology)
-        - name: Sub_Category
-          description: Product sub-category
-        - name: Product_Name
-          description: Name of the product
-        - name: Sales
-          description: Total sales amount for the order line
-          type: number
-        - name: Quantity
-          description: Quantity of products ordered
-          type: number
-        - name: Discount
-          description: Discount applied to the order line
-          type: number
-        - name: Profit
-          description: Profit generated from the order line
-          type: number
+name: superstore_semantic
+description: Semantic model for analyzing Superstore sales, customers, and products.
 
-    - name: Customers
-      description: Customer relationship management data
-      schema: data
-      database: SuperstoreDB
-      columns:
-        - name: Customer_ID
-          description: Unique identifier for the customer
-          primaryKey: true
-        - name: Customer_Since
-          description: Date when the customer was first registered
-          type: date
-        - name: Email
-          description: Customer's email address
-        - name: Phone
-          description: Customer's phone number
-        - name: Customer_Tier
-          description: Customer loyalty tier (Gold, Silver, Bronze)
-        - name: Account_Manager
-          description: Name of the account manager for the customer
+tables:
+  - name: ORDERS
+    description: Sales order facts
+    base_table:
+      database: SUPERSTOREDB
+      schema: DATA
+      table: ORDERS
+    primary_key:
+      columns: [ORDER_ID]
+    time_dimensions:
+      - name: ORDER_DATE
+        expr: ORDER_DATE
+        data_type: date
+      - name: SHIP_DATE
+        expr: SHIP_DATE
+        data_type: date
+    dimensions:
+      - name: ORDER_ID
+        expr: ORDER_ID
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - CA-2021-100006
+          - US-2022-100007
+          - CA-2023-100008
+        description: Unique identifier for each sales order.
+        synonyms:
+          - Sales Order Number
+          - Order Number
+          - Transaction ID
+      - {name: SHIP_MODE, expr: SHIP_MODE, data_type: text}
+      - name: CUSTOMER_ID
+        expr: CUSTOMER_ID
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - CG-12520
+          - DV-13045
+          - SO-20335
+        description: Unique identifier for the customer associated with the order.
+        synonyms:
+          - Client ID (Order)
+          - Buyer ID (Order)
+      - name: CUSTOMER_NAME
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Claire Gute
+          - Darrin Van Huff
+          - Sean O'Donnell
+        description: The full name of the customer who placed the order.
+        synonyms:
+          - Client Name
+          - Purchaser Name
+          - Buyer Name
+      - {name: SEGMENT, expr: SEGMENT, data_type: text}
+      - {name: COUNTRY, expr: COUNTRY, data_type: text}
+      - {name: CITY, expr: CITY, data_type: text}
+      - {name: STATE, expr: STATE, data_type: text}
+      - {name: POSTAL_CODE, expr: POSTAL_CODE, data_type: text}
+      - {name: REGION, expr: REGION, data_type: text}
+      - name: PRODUCT_ID
+        expr: PRODUCT_ID
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - FUR-BO-10001798
+          - FUR-CH-10000454
+          - OFF-LA-10000240
+        description: Unique identifier for the product included in the order.
+        synonyms:
+          - Item ID (Order)
+          - SKU (Order)
+      - name: CATEGORY
+        expr: CATEGORY
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Furniture
+          - Office Supplies
+          - Technology
+        description: The main category to which the product belongs.
+        synonyms:
+          - Product Category
+          - Item Type
+      - {name: SUB_CATEGORY, expr: SUB_CATEGORY, data_type: text}
+      - name: PRODUCT_NAME
+        expr: PRODUCT_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "Bush Somerset Collection Bookcase"
+          - "Hon Deluxe Fabric Upholstered Stacking Chairs, Rounded Back"
+          - "Self-Adhesive Address Labels for Typewriters by Universal"
+        description: The full name or description of the product.
+        synonyms:
+          - Item Name
+          - Product Description
+    facts:
+      - name: SALES
+        expr: SALES
+        data_type: FLOAT # Or NUMBER, FLOAT is common for currency
+        sample_values:
+          - 261.96
+          - 731.94
+          - 14.62
+        description: The total sales amount for the order line item.
+        synonyms:
+          - Revenue
+          - Sale Amount
+          - Transaction Value
+      - name: QUANTITY
+        expr: QUANTITY
+        data_type: NUMBER # Integer type
+        sample_values:
+          - 2
+          - 3
+          - 7
+        description: The number of units of the product sold.
+        synonyms:
+          - Units Sold
+          - Number of Items
+      - {name: DISCOUNT, expr: DISCOUNT, data_type: number}
+      - name: PROFIT
+        expr: PROFIT
+        data_type: FLOAT # Or NUMBER, FLOAT is common for currency
+        sample_values:
+          - 41.9136
+          - 219.582
+          - 6.8714
+        description: The profit amount for the order line item.
+        synonyms:
+          - Net Profit
+          - Earnings
 
-    - name: Products
-      description: Product details and specifications
-      schema: data
-      database: SuperstoreDB
-      columns:
-        - name: Product_ID
-          description: Unique identifier for the product
-          primaryKey: true
-        - name: Brand
-          description: Brand name of the product
-        - name: Warranty_Years
-          description: Number of years of warranty
-          type: number
-        - name: Material
-          description: Material used in the product
-        - name: Release_Date
-          description: Date when the product was released
-          type: date
-        - name: Sustainability_Rating
-          description: Environmental sustainability rating (A, B, C, D)
+  - name: CUSTOMERS
+    description: Customer dimension
+    base_table:
+      database: SUPERSTOREDB
+      schema: DATA
+      table: CUSTOMERS
+    primary_key:
+      columns: [CUSTOMER_ID]
+    time_dimensions:
+      - {name: CUSTOMER_SINCE, expr: CUSTOMER_SINCE, data_type: date}
+    dimensions:
+      - {name: CUSTOMER_ID, expr: CUSTOMER_ID, data_type: text}
+      - {name: EMAIL, expr: EMAIL, data_type: text}
+      - {name: PHONE, expr: PHONE, data_type: text}
+      - {name: CUSTOMER_TIER, expr: CUSTOMER_TIER, data_type: text}
+      - {name: ACCOUNT_MANAGER, expr: ACCOUNT_MANAGER, data_type: text}
 
-  relationships:
-    - name: Orders_to_Customers
-      description: Relationship between orders and customers - each order belongs to a specific customer
-      from:
-        table: Orders
-        column: Customer_ID
-      to:
-        table: Customers
-        column: Customer_ID
-      cardinality: MANY_TO_ONE
-      joinType: INNER
+  - name: PRODUCTS
+    description: Product dimension
+    base_table:
+      database: SUPERSTOREDB
+      schema: DATA
+      table: PRODUCTS
+    primary_key:
+      columns: [PRODUCT_ID]
+    time_dimensions:
+      - {name: RELEASE_DATE, expr: RELEASE_DATE, data_type: date}
+    dimensions:
+      - {name: PRODUCT_ID, expr: PRODUCT_ID, data_type: text}
+      - {name: BRAND, expr: BRAND, data_type: text}
+      - {name: MATERIAL, expr: MATERIAL, data_type: text}
+      - {name: SUSTAINABILITY_RATING, expr: SUSTAINABILITY_RATING, data_type: text}
+    facts:
+      - {name: WARRANTY_YEARS, expr: WARRANTY_YEARS, data_type: number}
 
-    - name: Orders_to_Products
-      description: Relationship between orders and products - each order line contains a specific product
-      from:
-        table: Orders
-        column: Product_ID
-      to:
-        table: Products
-        column: Product_ID
-      cardinality: MANY_TO_ONE
-      joinType: INNER
-      
-    - name: Customer_Region_Analysis
-      description: Relationship for analyzing customer orders by geographic region
-      from:
-        table: Orders
-        column: Region
-      to:
-        table: Orders
-        column: Customer_ID
-      cardinality: ONE_TO_MANY
-      joinType: INNER
-      
-    - name: Product_Category_Analysis
-      description: Relationship for analyzing product performance by category
-      from:
-        table: Orders
-        column: Category
-      to:
-        table: Orders
-        column: Product_ID
-      cardinality: ONE_TO_MANY
-      joinType: INNER
+relationships:
+  - name: ORDERS_TO_CUSTOMERS
+    left_table: ORDERS
+    right_table: CUSTOMERS
+    relationship_columns:
+      - {left_column: CUSTOMER_ID, right_column: CUSTOMER_ID}
+    relationship_type: many_to_one
+    join_type: inner
 
-  metrics:
-    - name: Total_Sales
-      description: Sum of all sales
-      expression: SUM(Orders.Sales)
-
-    - name: Total_Profit
-      description: Sum of all profit
-      expression: SUM(Orders.Profit)
-
-    - name: Profit_Margin
-      description: Profit as a percentage of sales
-      expression: SUM(Orders.Profit) / SUM(Orders.Sales) * 100
-
-    - name: Average_Order_Value
-      description: Average sales amount per order
-      expression: AVG(Orders.Sales)
-
-  dimensions:
-    - name: Order_Date
-      description: Date dimension for order analysis
-      table: Orders
-      column: Order_Date
-      type: time
-      timeGranularities: [DAY, WEEK, MONTH, QUARTER, YEAR]
-
-    - name: Ship_Date
-      description: Date dimension for shipping analysis
-      table: Orders
-      column: Ship_Date
-      type: time
-      timeGranularities: [DAY, WEEK, MONTH, QUARTER, YEAR]
-
-    - name: Region
-      description: Geographic region dimension
-      table: Orders
-      column: Region
-
-    - name: Category
-      description: Product category dimension
-      table: Orders
-      column: Category
-
-  customInstructions: |
-    This semantic model represents a retail superstore dataset with orders, customers, and products.
-    - Use "Sales" for revenue or sales amount
-    - Use "Profit" for profit amount
-    - "Customer_Tier" represents the loyalty level (Gold, Silver, Bronze)
-    - "Sustainability_Rating" represents environmental rating (A is best, D is worst)
-    - When analyzing sales trends, use Order_Date rather than Ship_Date
-    - For regional analysis, use the Region field rather than individual State/City fields
-    - Customer segments are Consumer, Corporate, and Home Office
-    - Product categories are Furniture, Office Supplies, and Technology
-    
-  verifiedQueries:
-    - name: total_sales_by_region
-      description: Total sales broken down by region
-      question: What are the total sales by region?
-      query: |
-        SELECT Region, SUM(Sales) as Total_Sales
-        FROM SuperstoreDB.data.Orders
-        GROUP BY Region
-        ORDER BY Total_Sales DESC
-        
-    - name: profit_by_category
-      description: Profit analysis by product category
-      question: Show me profit by product category
-      query: |
-        SELECT Category, SUM(Profit) as Total_Profit
-        FROM SuperstoreDB.data.Orders
-        GROUP BY Category
-        ORDER BY Total_Profit DESC
-        
-    - name: top_customers
-      description: Top customers by sales amount
-      question: Who are our top 10 customers by sales?
-      query: |
-        SELECT Customer_Name, SUM(Sales) as Total_Sales
-        FROM SuperstoreDB.data.Orders
-        GROUP BY Customer_Name
-        ORDER BY Total_Sales DESC
-        LIMIT 10
-        
-    - name: sales_trend_monthly
-      description: Monthly sales trend analysis
-      question: Show monthly sales trend for the past year
-      query: |
-        SELECT DATE_TRUNC('MONTH', Order_Date) as Month, SUM(Sales) as Monthly_Sales
-        FROM SuperstoreDB.data.Orders
-        WHERE Order_Date >= DATEADD(YEAR, -1, CURRENT_DATE())
-        GROUP BY Month
-        ORDER BY Month
-        
-    - name: product_profitability
-      description: Product profitability analysis
-      question: Which products have the highest profit margin?
-      query: |
-        SELECT Product_Name, SUM(Sales) as Total_Sales, SUM(Profit) as Total_Profit, 
-               (SUM(Profit)/SUM(Sales))*100 as Profit_Margin
-        FROM SuperstoreDB.data.Orders
-        GROUP BY Product_Name
-        HAVING Total_Sales > 0
-        ORDER BY Profit_Margin DESC
-        LIMIT 20
-        
-    - name: customer_segment_analysis
-      description: Analysis of sales by customer segment
-      question: Compare sales and profit across different customer segments
-      query: |
-        SELECT Segment, SUM(Sales) as Total_Sales, SUM(Profit) as Total_Profit,
-               COUNT(DISTINCT Order_ID) as Order_Count
-        FROM SuperstoreDB.data.Orders
-        GROUP BY Segment
-        ORDER BY Total_Sales DESC
-        
-    - name: gold_tier_customers
-      description: Analysis of Gold tier customers
-      question: How much sales come from Gold tier customers?
-      query: |
-        SELECT c.Customer_Tier, SUM(o.Sales) as Total_Sales, COUNT(DISTINCT o.Customer_ID) as Customer_Count
-        FROM SuperstoreDB.data.Orders o
-        JOIN SuperstoreDB.data.Customers c ON o.Customer_ID = c.Customer_ID
-        WHERE c.Customer_Tier = 'Gold'
-        GROUP BY c.Customer_Tier
+  - name: ORDERS_TO_PRODUCTS
+    left_table: ORDERS
+    right_table: PRODUCTS
+    relationship_columns:
+      - {left_column: PRODUCT_ID, right_column: PRODUCT_ID}
+    relationship_type: many_to_one
+    join_type: inner

@@ -1,0 +1,30 @@
+version: 1
+name: Superstore
+description: Semantic model for Superstore data
+
+base_table:
+  database: SUPERSTOREDB
+  schema: DATA
+  table: ORDERS
+
+dimensions:
+  - name: order_id
+    expr: ORDER_ID
+    data_type: text
+  - name: order_date
+    expr: ORDER_DATE
+    data_type: date
+  - name: customer_id
+    expr: CUSTOMER_ID
+    data_type: text
+
+measures:
+  - name: sales
+    expr: sum(SALES)
+    data_type: number
+  - name: profit
+    expr: sum(PROFIT)
+    data_type: number
+  - name: quantity
+    expr: sum(QUANTITY)
+    data_type: number

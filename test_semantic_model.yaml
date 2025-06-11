@@ -1,0 +1,16 @@
+version: 1
+name: TestModel
+description: Simple test semantic model
+tables:
+  - name: Orders
+    description: Test orders table
+    base_table:
+      database: SuperstoreDB
+      schema: data
+      table: Orders
+    dimensions:
+      - name: Order_ID
+        description: Unique identifier for each order
+        expr: Order_ID
+        data_type: TEXT
+        unique: true

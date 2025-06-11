@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import yaml
 from dotenv import load_dotenv
 from cortex_agent import CortexAgent
 from generate_jwt_final import generate_jwt_token # <--- IMPORT ADDED
@@ -48,7 +49,7 @@ def test_cortex_connection():
     #     return False
     
     # Test the new v2 API endpoint
-    base_url = f"https://{account}.snowflakecomputing.com/api/v2/cortex"
+    base_url = f"https://{account}.snowflakecomputing.com/api/v2"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -64,22 +65,27 @@ def test_cortex_connection():
                 "content": [
                     {
                         "type": "text",
-                        "text": "Hello"
+                        "text": "Hello, can you verify that my JWT authentication is working correctly?"
                     }
                 ]
             }
         ]
     }
     
-    print(f"\nTesting API endpoint: {base_url}/agent:run")
+    print(f"\nTesting API endpoint: {base_url}/statements")
     
     try:
         print("Attempting to send request...")
         response = requests.post(
-            f"{base_url}/agent:run",
+            f"{base_url}/statements",
             headers=headers,
-            json=payload,
-            stream=True, # Enable streaming
+            json={
+                "statement": "SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_VERSION()",
+                "timeout": 60,
+                "database": "SNOWFLAKE",
+                "schema": "ACCOUNT_USAGE",
+                "warehouse": "COMPUTE_WH"
+            },
             timeout=30  # Add a 30-second timeout
         )
         print("Request sent. Response received (or error during request).")
@@ -87,40 +93,49 @@ def test_cortex_connection():
         print(f"Status code: {response.status_code}")
         
         if response.status_code == 200:
-            print("SUCCESS! Connection to Cortex Agent API established.")
-            print("Streaming response:")
-            full_response_text = ""
-            for line in response.iter_lines():
-                if line:
-                    decoded_line = line.decode('utf-8')
-                    if decoded_line.startswith('data:'):
-                        # Strip the 'data: ' prefix to get the JSON string
-                        json_str = decoded_line[5:].strip()
-                        if json_str == "[DONE]":
-                            break # Stream is finished
-                        try:
-                            # Parse the JSON data
-                            json_chunk = json.loads(json_str)
-                            # Extract and append the text content from the delta
-                            if "delta" in json_chunk and "content" in json_chunk["delta"]:
-                                for content_item in json_chunk["delta"]["content"]:
-                                    if "text" in content_item:
-                                        text_chunk = content_item["text"]
-                                        print(text_chunk, end="", flush=True)
-                                        full_response_text += text_chunk
-                        except json.JSONDecodeError:
-                            print(f"\nCould not decode JSON from data: {json_str}")
-            
-            print("\n--- End of Stream ---")
-            return True 
+            print("SUCCESS! Connection to Snowflake API established.")
+            try:
+                response_json = response.json()
+                print("\nResponse JSON:")
+                print(json.dumps(response_json, indent=2))
+                
+                # Check for successful query results
+                if 'data' in response_json:
+                    print("\nQuery Results:")
+                    for row in response_json['data']:
+                        print(f"Current User: {row[0]}")
+                        print(f"Current Role: {row[1]}")
+                        print(f"Snowflake Version: {row[2]}")
+                    
+                    print("\nJWT authentication is working correctly!")
+                    return True
+                else:
+                    print("No data returned in the response.")
+            except json.JSONDecodeError:
+                print("Could not parse JSON response:")
+                print(response.text)
+            return True
         else:
-            print("ERROR: Failed to connect to Cortex Agent API")
+            print(f"ERROR: Failed to connect to Snowflake API. Status code: {response.status_code}")
             try:
                 error_response_json = response.json()
                 print(f"Response: {json.dumps(error_response_json, indent=2)}")
+                
+                # Check for specific error codes
+                if 'code' in error_response_json:
+                    error_code = error_response_json['code']
+                    if error_code == '390301':
+                        print("\nERROR: JWT token is invalid or expired.")
+                    elif error_code == '390302':
+                        print("\nERROR: JWT token account mismatch.")
+                    elif error_code == '390303':
+                        print("\nERROR: JWT token has invalid issue time.")
+                    elif error_code == '390304':
+                        print("\nERROR: JWT token has expired.")
+                
             except json.JSONDecodeError:
                 print(f"Response (raw): {response.text}")
-            return False 
+            return False
 
     except requests.exceptions.RequestException as e:
         print(f"ERROR: Request failed: {e}")
